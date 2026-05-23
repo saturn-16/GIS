@@ -1,0 +1,38 @@
+# ── Python cache ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ───────────────────────────────────────────
+venv/
+.venv/
+env/
+.env
+
+# ── Environment variables (API keys live here, NEVER commit this) ──
+.env
+*.env
+
+# ── Large model file (use Git LFS or share separately) ────────────
+*.keras
+*.h5
+*.weights.h5
+
+# ── Training dataset (too large for GitHub) ───────────────────────
+data/
+
+# ── Generated output folders ──────────────────────────────────────
+patches/
+predictions/
+env_report/
+growth_output/
+
+# ── Matplotlib / training artefacts ───────────────────────────────
+training_curves.png
+
+# ── OS junk ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

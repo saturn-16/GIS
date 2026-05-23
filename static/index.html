@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GIS Urban AI Analyser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+:root{
+  --bg:#080d16;--surface:#0f1623;--card:#131c2e;--border:#1a2640;
+  --accent:#00e5a0;--accent2:#3b82f6;--text:#dde4f0;--muted:#4a607a;--faint:#1e2d45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle at 15% 50%,rgba(0,229,160,.05) 0%,transparent 50%),
+    radial-gradient(circle at 85% 20%,rgba(59,130,246,.04) 0%,transparent 50%);
+  pointer-events:none;z-index:0}
+
+header{position:relative;z-index:1;padding:1.8rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem}
+.logo{width:42px;height:42px;background:var(--accent);border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.logo svg{width:22px;height:22px}
+h1{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;letter-spacing:-.02em;color:#fff}
+h1 span{color:var(--accent)}
+.sub{font-size:.75rem;color:var(--muted);margin-top:1px}
+
+main{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:2rem}
+
+.upload-zone{border:2px dashed var(--border);border-radius:16px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .3s;background:var(--surface);position:relative;overflow:hidden}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,229,160,.04)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-icon{width:52px;height:52px;background:rgba(0,229,160,.1);border-radius:12px;display:grid;place-items:center;margin:0 auto .8rem}
+.up-icon svg{width:26px;height:26px;stroke:var(--accent)}
+.upload-zone h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.3rem}
+.upload-zone p{font-size:.82rem;color:var(--muted)}
+.utag{display:inline-block;margin-top:.8rem;padding:.25rem .7rem;background:rgba(59,130,246,.15);color:var(--accent2);border-radius:20px;font-size:.72rem;font-weight:500}
+
+#preview-wrap{display:none;margin-top:1rem;border-radius:12px;overflow:hidden;border:1px solid var(--border);position:relative;max-height:220px}
+#preview-img{width:100%;max-height:220px;object-fit:cover;display:block}
+.pbadge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.75);color:var(--accent);padding:.25rem .6rem;border-radius:20px;font-size:.72rem;font-weight:500}
+
+#analyse-btn{display:none;width:100%;margin-top:1rem;padding:.9rem;background:var(--accent);color:#080d16;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+#analyse-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,229,160,.3)}
+#analyse-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+#loading{display:none;text-align:center;padding:3rem;color:var(--muted)}
+.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps{display:flex;flex-direction:column;gap:.4rem;margin-top:1rem;align-items:center}
+.step{font-size:.8rem;opacity:0;transition:opacity .4s;display:flex;align-items:center;gap:.5rem}
+.step.active{opacity:1;color:var(--accent)}
+.step.done{opacity:.35}
+.sdot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+#results{display:none;margin-top:2.5rem;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.sec{font-family:'Syne',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.ai-banner{background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.18);border-radius:14px;padding:1.4rem 1.6rem;margin-bottom:2rem;display:flex;gap:1rem;align-items:flex-start}
+.ai-badge{width:36px;height:36px;background:var(--accent);border-radius:8px;display:grid;place-items:center;flex-shrink:0;font-family:'Syne',sans-serif;font-weight:800;font-size:.72rem;color:#080d16}
+.ai-text{font-size:.9rem;line-height:1.7;color:var(--text)}
+.urgency-pill{display:inline-block;margin-top:.5rem;padding:.2rem .7rem;border-radius:20px;font-size:.7rem;font-weight:600}
+.u-critical{background:rgba(239,68,68,.2);color:#ef4444}
+.u-high{background:rgba(245,158,11,.2);color:#f59e0b}
+.u-moderate{background:rgba(59,130,246,.2);color:#3b82f6}
+.u-low{background:rgba(16,185,129,.2);color:#10b981}
+
+.map-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:860px){.map-grid{grid-template-columns:repeat(2,1fr)}}
+.map-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.map-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.map-label{padding:.55rem .8rem;font-size:.75rem;color:var(--muted);text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2rem}
+.li{display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--muted)}
+.ld{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+.met-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:2rem}
+@media(max-width:640px){.met-grid{grid-template-columns:repeat(2,1fr)}}
+.met-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem;text-align:center}
+.met-val{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;line-height:1;margin-bottom:.35rem}
+.met-lbl{font-size:.75rem;color:var(--muted)}
+
+.class-bars{display:flex;flex-direction:column;gap:.55rem;margin-bottom:2rem}
+.class-row{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:.7rem 1rem;display:grid;grid-template-columns:110px 1fr 60px 72px;align-items:center;gap:.8rem}
+.cname{font-size:.83rem;font-weight:500;display:flex;align-items:center;gap:.4rem}
+.cdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.btrack{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;transition:width .8s ease}
+.cpct{font-size:.78rem;color:var(--muted);text-align:right}
+.rpill{font-size:.67rem;font-weight:600;padding:.18rem .45rem;border-radius:20px;text-align:center}
+
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.8rem;margin-bottom:2rem}
+@media(max-width:700px){.score-grid{grid-template-columns:repeat(3,1fr)}}
+.score-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
+.score-ring{position:relative;width:64px;height:64px;margin:0 auto .6rem}
+.score-ring svg{transform:rotate(-90deg)}
+.sr-bg{fill:none;stroke:var(--border);stroke-width:6}
+.sr-fg{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.sr-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:800}
+.score-lbl{font-size:.7rem;color:var(--muted)}
+
+.actions-list{display:flex;flex-direction:column;gap:.8rem;margin-bottom:2rem}
+.action-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;display:grid;grid-template-columns:40px 1fr auto;gap:1rem;align-items:start;transition:border-color .2s}
+.action-card:hover{border-color:rgba(0,229,160,.3)}
+.action-rank{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;flex-shrink:0}
+.action-title{font-weight:500;font-size:.9rem;margin-bottom:.3rem;color:#fff}
+.action-desc{font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:.35rem}
+.action-impact{font-size:.75rem;color:#6b8aaa;font-style:italic}
+.action-meta{display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;flex-shrink:0}
+.tf-pill{padding:.2rem .55rem;border-radius:20px;font-size:.67rem;font-weight:600}
+.tf-immediate{background:rgba(239,68,68,.15);color:#ef4444}
+.tf-short_term{background:rgba(245,158,11,.15);color:#f59e0b}
+.tf-long_term{background:rgba(59,130,246,.15);color:#3b82f6}
+.cat-pill{padding:.2rem .55rem;border-radius:20px;font-size:.67rem;background:var(--faint);color:var(--muted)}
+
+.risk-list{display:flex;flex-direction:column;gap:.7rem;margin-bottom:2rem}
+.risk-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;display:grid;grid-template-columns:12px 1fr auto;gap:1rem;align-items:start}
+.rsev{width:8px;height:8px;border-radius:50%;margin-top:5px}
+.rsev.high{background:#ef4444}
+.rsev.medium{background:#f59e0b}
+.rsev.low{background:#10b981}
+.rname{font-weight:500;font-size:.88rem;color:#fff;margin-bottom:.3rem}
+.rdesc{font-size:.8rem;color:var(--muted);line-height:1.5}
+.rmit{font-size:.75rem;color:var(--accent);background:rgba(0,229,160,.07);padding:.3rem .7rem;border-radius:6px;align-self:center;max-width:200px;text-align:right}
+
+.zone-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:2rem}
+@media(max-width:700px){.zone-grid{grid-template-columns:1fr}}
+.zone-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem}
+.zone-title{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:#fff;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+.zdot{width:8px;height:8px;border-radius:50%}
+.zone-ul{display:flex;flex-direction:column;gap:.45rem}
+.zone-ul li{font-size:.8rem;color:var(--muted);line-height:1.5;list-style:none;padding-left:.9rem;position:relative}
+.zone-ul li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700}
+
+.policy-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:2rem}
+.policy-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;font-size:.82rem;color:var(--muted);line-height:1.55;display:flex;gap:.7rem}
+.policy-item::before{content:'⚖';flex-shrink:0;font-size:.85rem}
+
+.chat-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:2rem}
+.chat-history{padding:1.2rem;display:flex;flex-direction:column;gap:1rem;max-height:380px;overflow-y:auto}
+.msg{display:flex;gap:.8rem;align-items:flex-start}
+.msg-av{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:.7rem;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif}
+.msg.user .msg-av{background:rgba(59,130,246,.2);color:var(--accent2)}
+.msg.ai   .msg-av{background:var(--accent);color:#080d16}
+.msg-bubble{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem;font-size:.83rem;line-height:1.65;color:var(--text);max-width:90%}
+.msg.user .msg-bubble{background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.2)}
+.chat-footer{display:flex;gap:.5rem;padding:.8rem 1rem;border-top:1px solid var(--border);background:var(--surface)}
+.chat-footer input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.6rem .9rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s}
+.chat-footer input:focus{border-color:rgba(0,229,160,.4)}
+.chat-footer input::placeholder{color:var(--muted)}
+.send-btn{background:var(--accent);color:#080d16;border:none;border-radius:8px;padding:.6rem 1.1rem;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.typing{display:flex;gap:4px;align-items:center;padding:.4rem .2rem}
+.typing span{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:bounce .8s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.suggestions{display:flex;flex-wrap:wrap;gap:.4rem;padding:.6rem 1rem;border-top:1px solid var(--border)}
+.sug{background:var(--faint);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:.25rem .65rem;font-size:.75rem;cursor:pointer;transition:all .2s}
+.sug:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#080d16" stroke-width="2.5" stroke-linecap="round">
+      <polygon points="3,11 12,2 21,11 21,22 15,22 15,16 9,16 9,22 3,22"/>
+    </svg>
+  </div>
+  <div>
+    <h1>GIS Urban <span>AI</span> Analyser</h1>
+    <p class="sub">U-Net segmentation · Groq AI (Llama 4) environmental intelligence · Growth forecasting</p>
+  </div>
+</header>
+
+<main>
+  <div class="upload-zone" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*">
+    <div class="up-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h2>Drop any satellite or aerial image here</h2>
+    <p>Groq AI (Llama 4) analyses land use, predicts growth zones and generates tailored environmental recommendations</p>
+    <span class="utag">JPG · PNG · TIFF · Min 256 × 256 px</span>
+  </div>
+
+  <div id="preview-wrap">
+    <img id="preview-img" alt="Preview">
+    <div class="pbadge">Ready to analyse</div>
+  </div>
+  <button id="analyse-btn">Run Analysis</button>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="font-size:.9rem;color:#fff;margin-bottom:.5rem">Analysing your image...</p>
+    <div class="steps">
+      <div class="step" id="s1"><span class="sdot"></span>Running U-Net segmentation on image patches</div>
+      <div class="step" id="s2"><span class="sdot"></span>Computing spatial growth features</div>
+      <div class="step" id="s3"><span class="sdot"></span>Sending data to Groq AI (Llama 4)</div>
+      <div class="step" id="s4"><span class="sdot"></span>Building your environmental report</div>
+    </div>
+  </div>
+
+  <div id="results">
+
+    <div class="ai-banner">
+      <div class="ai-badge">AI</div>
+      <div>
+        <div class="ai-text" id="ai-summary-text">Generating analysis...</div>
+        <span id="ai-urgency" class="urgency-pill"></span>
+      </div>
+    </div>
+
+    <p class="sec">Visual Analysis</p>
+    <div class="map-grid">
+      <div class="map-card"><img id="r-original" alt="Original">  <div class="map-label">Original Image</div></div>
+      <div class="map-card"><img id="r-landuse"  alt="Land Use">  <div class="map-label">Predicted Land Use</div></div>
+      <div class="map-card"><img id="r-growth"   alt="Growth">    <div class="map-label">Growth Zones</div></div>
+      <div class="map-card"><img id="r-heatmap"  alt="Heatmap">   <div class="map-label">Growth Heatmap</div></div>
+    </div>
+    <div class="legend">
+      <span style="font-size:.72rem;color:var(--muted);margin-right:4px">Land use:</span>
+      <span class="li"><span class="ld" style="background:#3c1098"></span>Building</span>
+      <span class="li"><span class="ld" style="background:#8429f6"></span>Land</span>
+      <span class="li"><span class="ld" style="background:#6ec1e4"></span>Road</span>
+      <span class="li"><span class="ld" style="background:#fedd3a"></span>Vegetation</span>
+      <span class="li"><span class="ld" style="background:#e2a929"></span>Water</span>
+      <span style="font-size:.72rem;color:var(--muted);margin-left:10px;margin-right:4px">Growth:</span>
+      <span class="li"><span class="ld" style="background:#1a72b6"></span>Low</span>
+      <span class="li"><span class="ld" style="background:#f5e642"></span>Medium</span>
+      <span class="li"><span class="ld" style="background:#c0392b"></span>High</span>
+    </div>
+
+    <p class="sec">Key Environmental Metrics</p>
+    <div class="met-grid" id="met-grid"></div>
+
+    <p class="sec">Land Use Breakdown</p>
+    <div class="class-bars" id="class-bars"></div>
+
+    <p class="sec">Sustainability Scores (Groq AI assessed)</p>
+    <div class="score-grid" id="score-grid"></div>
+
+    <p class="sec">AI Priority Action Plan</p>
+    <div class="actions-list" id="actions-list"></div>
+
+    <p class="sec">Environmental Risk Assessment</p>
+    <div class="risk-list" id="risk-list"></div>
+
+    <p class="sec">Zone-specific Recommendations</p>
+    <div class="zone-grid" id="zone-grid"></div>
+
+    <p class="sec">Policy Suggestions</p>
+    <div class="policy-list" id="policy-list"></div>
+
+    <p class="sec">Ask Groq AI About This Image</p>
+    <div class="chat-wrap">
+      <div class="chat-history" id="chat-history"></div>
+      <div class="suggestions">
+        <span class="sug" onclick="askSug(this)">Which area needs attention first?</span>
+        <span class="sug" onclick="askSug(this)">What happens in 10 years if nothing is done?</span>
+        <span class="sug" onclick="askSug(this)">Suggest a budget plan for top actions</span>
+        <span class="sug" onclick="askSug(this)">Which zones should be legally protected?</span>
+        <span class="sug" onclick="askSug(this)">How can local residents help?</span>
+      </div>
+      <div class="chat-footer">
+        <input id="chat-input" type="text" placeholder="Ask anything about this satellite image...">
+        <button class="send-btn" id="send-btn">Ask AI</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+let analysisContext = null;
+let currentAIRecs   = null;
+let chatHistory     = [];
+let selectedFile    = null;
+
+const fileInput   = document.getElementById("file-input");
+const dropZone    = document.getElementById("drop-zone");
+const previewWrap = document.getElementById("preview-wrap");
+const previewImg  = document.getElementById("preview-img");
+const analyseBtn  = document.getElementById("analyse-btn");
+const loading     = document.getElementById("loading");
+const results     = document.getElementById("results");
+
+fileInput.addEventListener("change", e => setFile(e.target.files[0]));
+dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("drag"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dropZone.classList.remove("drag");
+  setFile(e.dataTransfer.files[0]);
+});
+
+function setFile(f) {
+  if (!f) return;
+  selectedFile = f;
+  previewImg.src = URL.createObjectURL(f);
+  previewWrap.style.display = "block";
+  analyseBtn.style.display  = "block";
+  results.style.display     = "none";
+}
+
+function animateSteps() {
+  const ids    = ["s1","s2","s3","s4"];
+  const delays = [0, 6000, 18000, 32000];
+  ids.forEach((id, i) => {
+    setTimeout(() => {
+      if (i > 0) document.getElementById(ids[i-1]).classList.replace("active","done");
+      document.getElementById(id).classList.add("active");
+    }, delays[i]);
+  });
+}
+
+analyseBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;
+  analyseBtn.disabled = true;
+  loading.style.display = "block";
+  results.style.display = "none";
+  document.querySelectorAll(".step").forEach(s => s.className = "step");
+  chatHistory = [];
+  animateSteps();
+
+  const fd = new FormData();
+  fd.append("image", selectedFile);
+
+  try {
+    const res  = await fetch("/analyse", { method: "POST", body: fd });
+    const data = await res.json();
+    if (data.error) { alert("Error: " + data.error); return; }
+
+    analysisContext = data.context;
+    currentAIRecs   = data.ai || {};
+
+    renderMaps(data);
+    renderMetrics(data);
+    renderClassBars(data);
+    renderAI(currentAIRecs);
+
+    results.style.display = "block";
+    results.scrollIntoView({ behavior: "smooth" });
+
+    if (currentAIRecs.summary) {
+      addBubble("ai", currentAIRecs.summary + " Ask me anything about this location.");
+    }
+  } catch(e) {
+    alert("Cannot reach Flask server. Make sure app.py is running on port 5000.\n" + e);
+  } finally {
+    analyseBtn.disabled = false;
+    loading.style.display = "none";
+  }
+});
+
+function renderMaps(d) {
+  document.getElementById("r-original").src = "data:image/png;base64," + d.original;
+  document.getElementById("r-landuse").src  = "data:image/png;base64," + d.land_use;
+  document.getElementById("r-growth").src   = "data:image/png;base64," + d.growth_map;
+  document.getElementById("r-heatmap").src  = "data:image/png;base64," + d.heatmap;
+}
+
+function renderMetrics(d) {
+  const m = d.metrics;
+  document.getElementById("met-grid").innerHTML = [
+    {l:"Green Cover",      v:m.green_health  + "%", c:"#10b981"},
+    {l:"Water Bodies",     v:m.water_health  + "%", c:"#3b82f6"},
+    {l:"Urban Density",    v:m.urban_density + "%", c:"#8429f6"},
+    {l:"High Growth Risk", v:m.growth_risk   + "%", c:"#ef4444"},
+  ].map(x => `<div class="met-card">
+    <div class="met-val" style="color:${x.c}">${x.v}</div>
+    <div class="met-lbl">${x.l}</div>
+  </div>`).join("");
+}
+
+function renderClassBars(d) {
+  document.getElementById("class-bars").innerHTML = d.class_stats.map(c => {
+    const rc = c.high_risk>40?"#ef4444":c.high_risk>20?"#f59e0b":"#10b981";
+    const rl = c.high_risk>40?"High risk":c.high_risk>20?"Med risk":"Stable";
+    return `<div class="class-row">
+      <div class="cname"><span class="cdot" style="background:${c.color}"></span>${c.name}</div>
+      <div class="btrack"><div class="bfill" style="width:${c.pct}%;background:${c.color}"></div></div>
+      <div class="cpct">${c.pct}%</div>
+      <div class="rpill" style="background:${rc}22;color:${rc}">${rl}</div>
+    </div>`;
+  }).join("");
+}
+
+function scoreColor(v){ return v>=70?"#10b981":v>=50?"#f59e0b":"#ef4444"; }
+
+function renderRing(v, color) {
+  const r=26, circ=2*Math.PI*r, off=circ-(v/100)*circ;
+  return `<div class="score-ring">
+    <svg viewBox="0 0 64 64" width="64" height="64">
+      <circle class="sr-bg" cx="32" cy="32" r="${r}"/>
+      <circle class="sr-fg" cx="32" cy="32" r="${r}"
+        stroke="${color}" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+    </svg>
+    <div class="sr-num" style="color:${color}">${v}</div>
+  </div>`;
+}
+
+const catColors = {
+  green_infrastructure:"#10b981", water_management:"#3b82f6",
+  heat_mitigation:"#f59e0b",      biodiversity:"#a855f7",
+  transport:"#ec4899",            policy:"#64748b",
+};
+
+function renderAI(ai) {
+  if (!ai || ai.error) {
+    document.getElementById("ai-summary-text").textContent =
+      ai?.error ? "AI error: " + ai.error : "No AI data received.";
+    return;
+  }
+
+  document.getElementById("ai-summary-text").textContent = ai.summary || "";
+  const up = document.getElementById("ai-urgency");
+  up.textContent = (ai.urgency_level || "").toUpperCase();
+  up.className   = "urgency-pill u-" + (ai.urgency_level || "moderate");
+
+  if (ai.sustainability_score) {
+    const ss   = ai.sustainability_score;
+    const dims = [
+      {k:"overall",          l:"Overall"},
+      {k:"green_cover",      l:"Green Cover"},
+      {k:"water_management", l:"Water Mgmt"},
+      {k:"urban_heat",       l:"Heat Index"},
+      {k:"biodiversity",     l:"Biodiversity"},
+    ];
+    document.getElementById("score-grid").innerHTML = dims.map(d => {
+      const v=ss[d.k]||0, c=scoreColor(v);
+      return `<div class="score-card">${renderRing(v,c)}<div class="score-lbl">${d.l}</div></div>`;
+    }).join("");
+  }
+
+  if (ai.priority_actions) {
+    document.getElementById("actions-list").innerHTML = ai.priority_actions.map(a => {
+      const cc = catColors[a.category] || "#64748b";
+      return `<div class="action-card">
+        <div class="action-rank" style="background:${cc}22;color:${cc}">${a.rank}</div>
+        <div>
+          <div class="action-title">${a.title}</div>
+          <div class="action-desc">${a.description}</div>
+          <div class="action-impact">${a.impact || ""}</div>
+        </div>
+        <div class="action-meta">
+          <span class="tf-pill tf-${a.timeframe}">${(a.timeframe||"").replace("_"," ")}</span>
+          <span class="cat-pill">${(a.category||"").replace("_"," ")}</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  if (ai.environmental_risks) {
+    document.getElementById("risk-list").innerHTML = ai.environmental_risks.map(r =>
+      `<div class="risk-card">
+        <div class="rsev ${r.severity}"></div>
+        <div>
+          <div class="rname">${r.risk}</div>
+          <div class="rdesc">${r.description}</div>
+        </div>
+        <div class="rmit">${r.mitigation}</div>
+      </div>`
+    ).join("");
+  }
+
+  if (ai.zone_recommendations) {
+    const zr    = ai.zone_recommendations;
+    const zones = [
+      {k:"high_growth_zones", l:"High growth zones",    c:"#ef4444"},
+      {k:"existing_urban",    l:"Existing urban areas",  c:"#8429f6"},
+      {k:"green_areas",       l:"Green areas",           c:"#10b981"},
+      {k:"water_bodies",      l:"Water bodies",          c:"#3b82f6"},
+    ];
+    document.getElementById("zone-grid").innerHTML = zones.map(z =>
+      `<div class="zone-card">
+        <div class="zone-title">
+          <span class="zdot" style="background:${z.c}"></span>${z.l}
+        </div>
+        <ul class="zone-ul">
+          ${(zr[z.k]||[]).map(r=>`<li>${r}</li>`).join("")}
+        </ul>
+      </div>`
+    ).join("");
+  }
+
+  if (ai.policy_suggestions) {
+    document.getElementById("policy-list").innerHTML = ai.policy_suggestions.map(p =>
+      `<div class="policy-item">${p}</div>`
+    ).join("");
+  }
+}
+
+document.getElementById("send-btn").addEventListener("click", sendChat);
+document.getElementById("chat-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendChat();
+});
+
+function askSug(el) {
+  document.getElementById("chat-input").value = el.textContent;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const q = input.value.trim();
+  if (!q || !analysisContext) return;
+  input.value = "";
+
+  addBubble("user", q);
+  chatHistory.push({ role: "user", content: q });
+
+  const sendBtn = document.getElementById("send-btn");
+  sendBtn.disabled = true;
+
+  const typing = document.createElement("div");
+  typing.className = "msg ai";
+  typing.innerHTML = `<div class="msg-av">AI</div>
+    <div class="typing"><span></span><span></span><span></span></div>`;
+  document.getElementById("chat-history").appendChild(typing);
+  scrollChat();
+
+  try {
+    const res = await fetch("/chat", {
+      method:  "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        context:  analysisContext,
+        ai_recs:  currentAIRecs,
+        history:  chatHistory.slice(-6),
+        question: q,
+      }),
+    });
+    const data  = await res.json();
+    const reply = data.reply || "Sorry, no response received.";
+    chatHistory.push({ role: "assistant", content: reply });
+    typing.remove();
+    addBubble("ai", reply);
+  } catch(e) {
+    typing.remove();
+    addBubble("ai", "Could not reach AI. Please check that app.py is running.");
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+function addBubble(role, text) {
+  const el = document.createElement("div");
+  el.className = `msg ${role}`;
+  el.innerHTML = `<div class="msg-av">${role==="user"?"You":"AI"}</div>
+    <div class="msg-bubble">${text}</div>`;
+  document.getElementById("chat-history").appendChild(el);
+  scrollChat();
+}
+
+function scrollChat() {
+  const h = document.getElementById("chat-history");
+  h.scrollTop = h.scrollHeight;
+}
+</script>
+</body>
+</html>
