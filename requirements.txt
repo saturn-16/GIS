@@ -8,3 +8,4 @@ groq>=0.4
 scikit-learn>=1.3
 opencv-python>=4.8
 python-dotenv>=1.0
+gunicorn>=21.2

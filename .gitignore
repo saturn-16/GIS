@@ -15,8 +15,8 @@ env/
 .env
 *.env
 
-# ── Large model file (use Git LFS or share separately) ────────────
-*.keras
+# ── Large model file — tracked via Git LFS, NOT ignored ───────────
+# *.keras  ← removed: now handled by .gitattributes (Git LFS)
 *.h5
 *.weights.h5
 
