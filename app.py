@@ -42,13 +42,19 @@ growth_cmap = mcolors.LinearSegmentedColormap.from_list(
 # ── Groq client ───────────────────────────────────────────────────
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# ── Load U-Net model ──────────────────────────────────────────────
-print("Loading U-Net model...")
-model = tf.keras.models.load_model(
-    MODEL_PATH,
-    custom_objects={"weighted_sparse_cce": lambda y, p: p}
-)
-print("Model ready!")
+# ── Lazy-load U-Net model (loaded on first request, not at startup) ─
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        print("Loading U-Net model...")
+        _model = tf.keras.models.load_model(
+            MODEL_PATH,
+            custom_objects={"weighted_sparse_cce": lambda y, p: p}
+        )
+        print("Model ready!")
+    return _model
 
 # ── Predict class map ─────────────────────────────────────────────
 def predict_class_map(img_array):
@@ -59,7 +65,7 @@ def predict_class_map(img_array):
     for y in range(0, ph, PATCH_SIZE):
         for x in range(0, pw, PATCH_SIZE):
             patch = img_array[y:y+PATCH_SIZE, x:x+PATCH_SIZE] / 255.0
-            out   = model.predict(
+            out   = get_model().predict(
                 np.expand_dims(patch.astype(np.float32), 0), verbose=0
             )
             pred[y:y+PATCH_SIZE, x:x+PATCH_SIZE] = np.argmax(out[0], axis=-1)
