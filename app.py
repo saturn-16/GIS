@@ -39,8 +39,14 @@ growth_cmap = mcolors.LinearSegmentedColormap.from_list(
     "growth", ["#0a2f6e", "#1a6bb5", "#f5e642", "#e87c2b", "#c0392b"], N=256
 )
 
-# ── Groq client ───────────────────────────────────────────────────
-groq_client = Groq(api_key=GROQ_API_KEY)
+# ── Groq client (lazy — re-read key on every call so HF Spaces secrets work) ─
+def _get_groq_client():
+    key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "GROQ_API_KEY is not set. Add it as a Secret in your Hugging Face Space settings."
+        )
+    return Groq(api_key=key)
 
 # ── Lazy-load U-Net model (loaded on first request, not at startup) ─
 _model = None
@@ -231,7 +237,7 @@ Respond ONLY with valid JSON — no markdown fences, no extra text:
 }}"""
 
     try:
-        response = groq_client.chat.completions.create(
+        response = _get_groq_client().chat.completions.create(
             model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[
                 {
@@ -259,7 +265,7 @@ Respond ONLY with valid JSON — no markdown fences, no extra text:
     except Exception as e:
         print(f"Groq vision error: {e} — trying text-only fallback")
         # Text-only fallback if vision model fails
-        response = groq_client.chat.completions.create(
+        response = _get_groq_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {
@@ -294,7 +300,7 @@ Be concise, practical and reference actual numbers from the data."""
     messages.append({"role": "user", "content": question})
 
     try:
-        response = groq_client.chat.completions.create(
+        response = _get_groq_client().chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=500,
