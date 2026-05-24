@@ -543,4 +543,5 @@ def chat():
         return jsonify({"reply": f"AI error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=False, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)
