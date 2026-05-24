@@ -1,3 +1,12 @@
+---
+title: GIS Urban AI Analyser
+emoji: 🛸
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # GIS Urban AI Analyser
 
 A deep-learning powered GIS platform that analyses satellite imagery to:
