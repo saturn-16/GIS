@@ -4,7 +4,7 @@ A deep-learning powered GIS platform that analyses satellite imagery using a tra
 
 **Website:** [saturn-16-gis.hf.space](https://saturn-16-gis.hf.space)
 
-**Live Demo:** [https://youtu.be/3V_7D5cm4vM]
+**Live Demo:** https://youtu.be/3V_7D5cm4vM
 
 ---
 
