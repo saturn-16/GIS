@@ -2,7 +2,8 @@
 
 A deep-learning powered GIS platform that analyses satellite imagery using a trained U-Net segmentation model, predicts urban growth zones, and generates AI-powered environmental recommendations.
 
-**Live Demo:** [saturn-16-gis.hf.space](https://saturn-16-gis.hf.space)
+**Website:** [saturn-16-gis.hf.space](https://saturn-16-gis.hf.space)
+**Live Demo:** [https://youtu.be/3V_7D5cm4vM]
 
 ---
 
